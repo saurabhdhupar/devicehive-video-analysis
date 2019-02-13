@@ -22,6 +22,7 @@ import tensorflow as tf
 from models import yolo
 from log_config import LOGGING
 from utils.general import format_predictions, find_class_by_name, is_url
+from collection import Counter
 
 logging.config.dictConfig(LOGGING)
 
@@ -53,6 +54,7 @@ def evaluate(_):
     frame_num = 0
     start_time = time.time()
     fps = 0
+   
     try:
         while True:
             ret, frame = cam.read()
@@ -61,6 +63,7 @@ def evaluate(_):
                 logger.info('Can\'t read video data. Potential end of stream')
                 return
 
+            object_count_dict = Counter()
             predictions = model.evaluate(frame)
 
             for o in predictions:
@@ -72,6 +75,8 @@ def evaluate(_):
 
                 color = o['color']
                 class_name = o['class_name']
+                
+                object_count_dict[str(class_name)] += 1
 
                 # Draw box
                 cv2.rectangle(frame, (x1, y1), (x2, y2), color, 2)
@@ -84,6 +89,8 @@ def evaluate(_):
                               color, thickness=cv2.FILLED)
                 cv2.putText(frame, class_name, (x1, y1-baseline),
                             cv2.FONT_HERSHEY_SIMPLEX, 0.75, (0, 0, 0), 1)
+                
+                logger.info(object_count_dict)
 
             end_time = time.time()
             fps = fps * 0.9 + 1/(end_time - start_time) * 0.1
